@@ -1,0 +1,1435 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>S.O.S ITZ — Socorro Automotivo</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0D1B2A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+<style>
+/* ── TOKENS ──────────────────────────────────────────────── */
+:root {
+  --navy:    #0D1B2A;
+  --navy2:   #162333;
+  --amber:   #F59E0B;
+  --amberD:  #D97706;
+  --sos:     #EF4444;
+  --sosD:    #DC2626;
+  --green:   #10B981;
+  --blue:    #3B82F6;
+  --bg:      #EEF2F7;
+  --surface: #FFFFFF;
+  --border:  #E2E8F0;
+  --t1: #0D1B2A;
+  --t2: #475569;
+  --t3: #94A3B8;
+  --r1: 12px; --r2: 20px; --r3: 28px;
+  --s1: 0 2px 8px rgba(13,27,42,.07);
+  --s2: 0 8px 24px rgba(13,27,42,.11);
+  --s3: 0 20px 60px rgba(13,27,42,.18);
+}
+
+/* ── RESET ───────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;height:100%;overflow:hidden;background:var(--navy);}
+body{font-family:'Sora',sans-serif;color:var(--t1);}
+input,textarea,select,button{font-family:'Sora',sans-serif;}
+button{cursor:pointer;}
+
+/* ── VIEWS ───────────────────────────────────────────────── */
+.v{display:none;position:fixed;inset:0;z-index:10;flex-direction:column;}
+.v.on{display:flex;}
+
+/* ── SPLASH ──────────────────────────────────────────────── */
+#vs{background:var(--navy);align-items:center;justify-content:center;gap:0;}
+.sp-ring{
+  width:100px;height:100px;border-radius:50%;
+  background:conic-gradient(from 0deg,var(--amber),var(--sos),var(--amber));
+  display:flex;align-items:center;justify-content:center;
+  animation:spin-ring 2s linear infinite;
+  box-shadow:0 0 40px rgba(245,158,11,.35);
+}
+.sp-ring-inner{
+  width:82px;height:82px;border-radius:50%;background:var(--navy);
+  display:flex;align-items:center;justify-content:center;
+}
+.sp-ring-inner i{font-size:36px;color:var(--amber);}
+@keyframes spin-ring{to{transform:rotate(360deg);}}
+.sp-title{font-size:32px;font-weight:900;color:#fff;letter-spacing:-1px;margin-top:22px;}
+.sp-sub{font-size:10px;font-weight:700;color:var(--amber);letter-spacing:4px;text-transform:uppercase;margin-top:6px;}
+.sp-dots{display:flex;gap:7px;margin-top:44px;}
+.sp-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.2);animation:dot 1.4s ease-in-out infinite;}
+.sp-dot:nth-child(2){animation-delay:.22s;}.sp-dot:nth-child(3){animation-delay:.44s;}
+@keyframes dot{0%,80%,100%{background:rgba(255,255,255,.2);}40%{background:var(--amber);}}
+
+/* ── AUTH ────────────────────────────────────────────────── */
+#va{
+  overflow-y:auto;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(245,158,11,.18) 0%, transparent 60%),
+    var(--navy);
+}
+.auth-wrap{
+  width:100%;max-width:420px;margin:auto;
+  padding:56px 28px 36px;display:flex;flex-direction:column;min-height:100vh;
+  justify-content:center;
+}
+.auth-brand{text-align:center;margin-bottom:40px;}
+.auth-icon{
+  width:76px;height:76px;border-radius:50%;
+  background:linear-gradient(135deg,var(--amber),var(--sos));
+  display:inline-flex;align-items:center;justify-content:center;
+  box-shadow:0 12px 30px rgba(245,158,11,.40);margin-bottom:16px;
+}
+.auth-icon i{font-size:34px;color:#fff;}
+.auth-brand h1{font-size:28px;font-weight:900;color:#fff;margin:0 0 4px;letter-spacing:-0.5px;}
+.auth-brand p{font-size:10px;font-weight:700;color:var(--amber);letter-spacing:3.5px;text-transform:uppercase;margin:0;}
+
+.tab-row{display:flex;background:rgba(255,255,255,.08);border-radius:var(--r1);padding:4px;margin-bottom:24px;}
+.atab{
+  flex:1;padding:11px;border:none;background:transparent;border-radius:9px;
+  font-size:13px;font-weight:700;color:rgba(255,255,255,.45);transition:.2s;
+}
+.atab.on{background:#fff;color:var(--navy);}
+
+.ainp-w{position:relative;margin-bottom:12px;}
+.ainp-w i{position:absolute;left:15px;top:50%;transform:translateY(-50%);font-size:20px;color:rgba(255,255,255,.35);}
+.ainp{
+  width:100%;padding:15px 16px 15px 47px;
+  background:rgba(255,255,255,.09);border:1.5px solid rgba(255,255,255,.13);
+  border-radius:var(--r1);font-size:14px;color:#fff;outline:none;transition:.2s;
+}
+.ainp::placeholder{color:rgba(255,255,255,.38);}
+.ainp:focus{background:rgba(255,255,255,.14);border-color:var(--amber);}
+
+.btn-main{
+  width:100%;padding:16px;border:none;border-radius:var(--r1);
+  font-size:15px;font-weight:700;letter-spacing:.4px;transition:.2s;
+  background:linear-gradient(135deg,var(--amber),var(--amberD));
+  color:#fff;box-shadow:0 10px 24px rgba(245,158,11,.38);
+}
+.btn-main:active{transform:scale(.98);}
+.btn-main:disabled{opacity:.6;}
+.btn-google{
+  width:100%;padding:14px;border:1.5px solid rgba(255,255,255,.2);
+  border-radius:var(--r1);background:rgba(255,255,255,.07);
+  color:#fff;font-size:14px;font-weight:600;margin-top:10px;
+  display:flex;align-items:center;justify-content:center;gap:10px;transition:.2s;
+}
+.btn-google:active{background:rgba(255,255,255,.13);}
+.divider{display:flex;align-items:center;gap:12px;margin:18px 0;}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.14);}
+.divider span{font-size:12px;color:rgba(255,255,255,.35);font-weight:500;}
+
+/* ── USER HOME ───────────────────────────────────────────── */
+#vu{position:relative;background:#c8d5e0;}
+#user-map{position:absolute;inset:0;z-index:0;}
+
+.mh{/* map header */
+  position:absolute;top:0;left:0;right:0;z-index:50;
+  padding:48px 16px 12px;
+  display:flex;justify-content:space-between;align-items:center;
+  background:linear-gradient(to bottom,rgba(13,27,42,.55) 0%,transparent 100%);
+}
+.logo-pill{
+  background:rgba(255,255,255,.95);backdrop-filter:blur(12px);
+  border-radius:50px;padding:8px 16px 8px 10px;
+  display:flex;align-items:center;gap:9px;box-shadow:var(--s2);
+}
+.logo-pill .ld{
+  width:32px;height:32px;border-radius:50%;
+  background:linear-gradient(135deg,var(--amber),var(--sos));
+  display:flex;align-items:center;justify-content:center;
+}
+.logo-pill .ld i{font-size:16px;color:#fff;}
+.logo-pill span{font-size:14px;font-weight:800;color:var(--navy);}
+.map-btn{
+  width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.95);
+  backdrop-filter:blur(12px);box-shadow:var(--s2);border:none;
+  display:flex;align-items:center;justify-content:center;
+}
+.map-btn i{font-size:22px;color:var(--navy);}
+
+/* User menu */
+#umenu-wrap{display:none;position:absolute;top:0;left:0;right:0;bottom:0;z-index:60;}
+#umenu-wrap.on{display:block;}
+.umenu{
+  position:absolute;top:96px;right:16px;background:#fff;
+  border-radius:var(--r2);padding:6px;box-shadow:var(--s3);min-width:190px;
+}
+.umenu-row{text-align:center;padding:12px 14px;border-bottom:1px solid var(--border);margin-bottom:4px;}
+.umenu-row b{display:block;font-size:14px;font-weight:700;color:var(--t1);}
+.umenu-row span{font-size:11px;color:var(--t3);}
+.umenu-item{
+  display:flex;align-items:center;gap:10px;padding:11px 13px;
+  border-radius:10px;font-size:14px;font-weight:600;color:var(--t1);
+  border:none;background:transparent;width:100%;text-align:left;transition:.15s;
+}
+.umenu-item:hover{background:var(--bg);}
+.umenu-item i{font-size:19px;color:var(--t2);}
+.umenu-item.red{color:var(--sos);}
+.umenu-item.red i{color:var(--sos);}
+
+/* Dock */
+.dock{
+  position:absolute;bottom:0;left:0;right:0;z-index:50;
+  background:rgba(255,255,255,.97);backdrop-filter:blur(20px);
+  border-radius:var(--r3) var(--r3) 0 0;
+  padding:10px 20px 36px;
+  box-shadow:0 -6px 40px rgba(13,27,42,.13);
+}
+.dock-bar{width:38px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px;}
+.dock-g{font-size:13px;color:var(--t2);margin-bottom:3px;}
+.dock-t{font-size:18px;font-weight:800;color:var(--t1);margin-bottom:16px;letter-spacing:-.3px;}
+
+.active-banner{
+  display:flex;align-items:center;gap:13px;
+  background:linear-gradient(135deg,var(--amber),var(--amberD));
+  border-radius:var(--r2);padding:15px 16px;margin-bottom:14px;cursor:pointer;
+  box-shadow:0 8px 20px rgba(245,158,11,.32);
+}
+.active-banner .pdot{
+  width:11px;height:11px;border-radius:50%;background:#fff;flex-shrink:0;
+  box-shadow:0 0 0 4px rgba(255,255,255,.28);animation:blink 1.1s ease-in-out infinite;
+}
+.active-banner .btext{flex:1;}
+.active-banner .btext b{display:block;font-size:14px;color:#fff;font-weight:700;}
+.active-banner .btext s{font-size:12px;color:rgba(255,255,255,.8);}
+.active-banner > i{color:#fff;font-size:22px;}
+
+.sos-btn{
+  width:100%;padding:18px;border:none;border-radius:var(--r2);
+  background:linear-gradient(135deg,var(--sos),var(--sosD));
+  color:#fff;font-size:17px;font-weight:800;letter-spacing:.3px;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  box-shadow:0 10px 28px rgba(239,68,68,.38);
+  animation:sos-pulse 2.8s ease-in-out infinite;transition:.2s;
+}
+.sos-btn:active{transform:scale(.97);}
+.sos-btn i{font-size:22px;}
+@keyframes sos-pulse{
+  0%,100%{box-shadow:0 10px 28px rgba(239,68,68,.38);}
+  50%{box-shadow:0 10px 44px rgba(239,68,68,.58);}
+}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.38};}
+
+/* ── OVERLAY + SHEET ─────────────────────────────────────── */
+.overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(13,27,42,.62);backdrop-filter:blur(5px);z-index:200;
+}
+.overlay.on{display:block;}
+
+.sheet{
+  display:none;position:fixed;bottom:0;left:0;right:0;z-index:201;
+  background:#fff;border-radius:var(--r3) var(--r3) 0 0;
+  padding:10px 20px 36px;max-height:93vh;overflow-y:auto;
+  transform:translateY(100%);
+  transition:transform .36s cubic-bezier(.32,.72,0,1);
+}
+.sheet.on{display:flex;flex-direction:column;transform:translateY(0);}
+.sh-bar{width:38px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 18px;flex-shrink:0;}
+.sh-title{font-size:20px;font-weight:800;color:var(--t1);margin-bottom:3px;letter-spacing:-.3px;}
+.sh-sub{font-size:13px;color:var(--t2);margin-bottom:20px;}
+
+/* Service chips */
+.chips{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-bottom:20px;}
+.chip{
+  padding:13px 8px;border-radius:var(--r1);border:2px solid var(--border);
+  background:#fff;text-align:center;transition:.18s;
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+}
+.chip i{font-size:24px;color:var(--t3);transition:.18s;}
+.chip span{font-size:11px;font-weight:700;color:var(--t2);transition:.18s;}
+.chip.sel{border-color:var(--amber);background:rgba(245,158,11,.07);}
+.chip.sel i,.chip.sel span{color:var(--amberD);}
+
+/* Form fields */
+.fl{font-size:10px;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;}
+.fi{
+  width:100%;padding:13px 15px;border:1.5px solid var(--border);
+  border-radius:var(--r1);font-size:14px;color:var(--t1);
+  background:var(--bg);outline:none;transition:.2s;margin-bottom:12px;
+}
+.fi:focus{border-color:var(--amber);background:#fff;}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+.loc-pill{
+  display:flex;align-items:flex-start;gap:10px;
+  background:rgba(16,185,129,.08);border:1.5px solid rgba(16,185,129,.22);
+  border-radius:var(--r1);padding:12px 14px;margin-bottom:12px;
+}
+.loc-pill i{font-size:20px;color:var(--green);flex-shrink:0;margin-top:2px;}
+.loc-pill div b{display:block;font-size:12px;font-weight:800;color:var(--green);}
+.loc-pill div span{font-size:12px;color:var(--t2);line-height:1.45;}
+
+#req-map{height:140px;border-radius:var(--r1);margin-bottom:12px;border:1px solid var(--border);}
+
+.btn-sos2{
+  width:100%;padding:15px;border:none;border-radius:var(--r1);
+  background:linear-gradient(135deg,var(--sos),var(--sosD));
+  color:#fff;font-size:15px;font-weight:800;box-shadow:0 8px 22px rgba(239,68,68,.32);
+  display:flex;align-items:center;justify-content:center;gap:8px;transition:.2s;
+}
+.btn-sos2:active{transform:scale(.98);}
+.btn-cancel2{width:100%;border:none;background:none;color:var(--t3);font-size:14px;font-weight:600;padding:13px;margin-top:4px;}
+
+/* ── TRACKING ────────────────────────────────────────────── */
+#vt{background:#c8d5e0;position:relative;}
+#tracking-map{position:absolute;inset:0;z-index:0;}
+.t-dock{
+  position:absolute;bottom:0;left:0;right:0;z-index:50;
+  background:rgba(255,255,255,.97);backdrop-filter:blur(20px);
+  border-radius:var(--r3) var(--r3) 0 0;
+  padding:14px 20px 36px;box-shadow:0 -4px 20px rgba(13,27,42,.1);
+}
+.t-status{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(245,158,11,.11);border-radius:50px;padding:6px 14px;margin-bottom:14px;
+}
+.t-status .ldot{width:8px;height:8px;border-radius:50%;background:var(--amber);animation:blink 1s ease-in-out infinite;}
+.t-status span{font-size:12px;font-weight:700;color:var(--amberD);}
+.t-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.t-row h3{margin:0 0 3px;font-size:18px;font-weight:800;letter-spacing:-.3px;}
+.t-row p{margin:0;font-size:13px;color:var(--t2);}
+.t-avatar{
+  width:52px;height:52px;border-radius:50%;
+  background:linear-gradient(135deg,var(--navy),var(--navy2));
+  display:flex;align-items:center;justify-content:center;
+  border:3px solid var(--amber);flex-shrink:0;
+}
+.t-avatar i{font-size:24px;color:#fff;}
+.t-acts{display:flex;gap:10px;}
+.btn-t-cancel{
+  flex:1;padding:14px;border:1.5px solid var(--border);
+  border-radius:var(--r1);background:#fff;font-size:14px;font-weight:700;color:var(--t2);
+}
+.btn-t-chat{
+  flex:2;padding:14px;border:none;border-radius:var(--r1);
+  background:var(--navy);color:#fff;font-size:14px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+}
+
+/* ── WORKSHOP ────────────────────────────────────────────── */
+#vw{overflow:hidden;background:var(--bg);}
+.wh{background:linear-gradient(160deg,var(--navy) 0%,var(--navy2) 100%);padding:52px 20px 20px;}
+.wh-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;}
+.wh-top-l .g{font-size:12px;color:rgba(255,255,255,.5);margin-bottom:2px;}
+.wh-top-l .n{font-size:21px;font-weight:800;color:#fff;letter-spacing:-.3px;}
+.wh-top-r{display:flex;align-items:center;gap:8px;}
+.online-badge{
+  background:var(--green);border-radius:50px;padding:5px 13px;
+  font-size:11px;font-weight:700;color:#fff;
+  display:flex;align-items:center;gap:6px;
+}
+.odot{width:6px;height:6px;border-radius:50%;background:#fff;animation:blink 1s infinite;}
+.ico-btn{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.15);border:none;display:flex;align-items:center;justify-content:center;}
+.ico-btn i{font-size:18px;color:#fff;}
+.wh-stats{display:flex;gap:10px;}
+.ws{
+  flex:1;background:rgba(255,255,255,.1);border-radius:var(--r1);
+  padding:12px;text-align:center;border:1px solid rgba(255,255,255,.08);
+}
+.ws b{display:block;font-size:24px;font-weight:900;color:#fff;}
+.ws span{font-size:10px;color:rgba(255,255,255,.55);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+.wh-tabs{display:flex;background:#fff;border-bottom:1px solid var(--border);}
+.whtab{
+  flex:1;padding:13px;border:none;background:transparent;
+  font-size:12px;font-weight:700;color:var(--t3);
+  border-bottom:2.5px solid transparent;transition:.18s;
+}
+.whtab.on{color:var(--navy);border-bottom-color:var(--amber);}
+.wb{flex:1;overflow-y:auto;padding:14px;}
+.sec-lbl{font-size:10px;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:1px;margin-bottom:11px;}
+
+/* Call card */
+.cc{
+  background:#fff;border-radius:var(--r2);padding:16px;margin-bottom:11px;
+  box-shadow:var(--s1);position:relative;overflow:hidden;animation:sup .3s ease;
+}
+@keyframes sup{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.cc::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:4px 0 0 4px;}
+.cc.pend::before{background:var(--sos);}
+.cc.aceito::before{background:var(--amber);}
+.cc.done::before{background:var(--green);}
+
+.cc-tag{
+  display:inline-flex;align-items:center;gap:5px;
+  border-radius:50px;padding:4px 10px;font-size:10px;font-weight:800;margin-bottom:9px;
+}
+.cc-tag.pend{background:rgba(239,68,68,.1);color:var(--sos);}
+.cc-tag.aceito{background:rgba(245,158,11,.1);color:var(--amberD);}
+.cc-tag.done{background:rgba(16,185,129,.1);color:var(--green);}
+.cc-svc{font-size:10px;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px;}
+.cc-veh{font-size:16px;font-weight:800;color:var(--t1);margin-bottom:4px;letter-spacing:-.2px;}
+.cc-loc{font-size:12px;color:var(--t2);display:flex;align-items:flex-start;gap:5px;margin-bottom:9px;line-height:1.4;}
+.cc-loc i{color:var(--sos);font-size:15px;flex-shrink:0;margin-top:1px;}
+.cc-desc{font-size:12px;color:var(--t3);background:var(--bg);padding:9px 12px;border-radius:8px;margin-bottom:10px;font-style:italic;}
+.cc-mmap{height:115px;border-radius:var(--r1);margin-bottom:10px;border:1px solid var(--border);}
+.cc-acts{display:flex;gap:7px;}
+.btn-accept{
+  flex:2;padding:12px;border:none;border-radius:var(--r1);
+  background:var(--navy);color:#fff;font-size:13px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;gap:6px;transition:.15s;
+}
+.btn-accept:active{opacity:.82;}
+.btn-route2{
+  flex:1;padding:12px;border:1.5px solid var(--border);
+  border-radius:var(--r1);background:#fff;font-size:12px;font-weight:700;color:var(--t1);
+  display:flex;align-items:center;justify-content:center;gap:5px;
+}
+.btn-ico{
+  width:44px;height:44px;border:1.5px solid var(--border);
+  border-radius:var(--r1);background:#fff;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.btn-ico i{font-size:20px;color:var(--navy);}
+
+/* ── ROUTE MAP ───────────────────────────────────────────── */
+#vr{position:relative;background:#c8d5e0;}
+#route-map{position:absolute;inset:0;z-index:0;}
+.rh{
+  position:absolute;top:0;left:0;right:0;z-index:50;
+  padding:48px 16px 12px;
+  display:flex;align-items:center;gap:11px;
+}
+.r-dock{
+  position:absolute;bottom:0;left:0;right:0;z-index:50;
+  background:rgba(255,255,255,.97);backdrop-filter:blur(20px);
+  border-radius:var(--r3) var(--r3) 0 0;padding:12px 20px 36px;
+  box-shadow:0 -4px 20px rgba(13,27,42,.1);
+}
+.r-dest{display:flex;align-items:center;gap:12px;margin-bottom:13px;}
+.r-dest-ico{
+  width:44px;height:44px;border-radius:50%;
+  background:rgba(239,68,68,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.r-dest-ico i{font-size:20px;color:var(--sos);}
+.r-dest-lbl{font-size:10px;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;}
+.r-dest-addr{font-size:14px;font-weight:700;color:var(--t1);}
+.r-acts{display:flex;gap:8px;margin-bottom:12px;}
+.btn-gmaps{
+  flex:1;padding:13px;border:1.5px solid var(--border);
+  border-radius:var(--r1);background:#fff;font-size:13px;font-weight:700;color:var(--t1);
+  display:flex;align-items:center;justify-content:center;gap:7px;
+}
+.btn-arrived{
+  width:100%;padding:16px;border:none;border-radius:var(--r2);
+  background:linear-gradient(135deg,var(--green),#059669);
+  color:#fff;font-size:15px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  box-shadow:0 8px 22px rgba(16,185,129,.32);
+}
+
+/* ── ADMIN ───────────────────────────────────────────────── */
+#vad{overflow-y:auto;background:var(--bg);}
+.adh{
+  background:linear-gradient(160deg,var(--navy) 0%,var(--navy2) 100%);
+  padding:52px 20px 20px;display:flex;justify-content:space-between;align-items:flex-end;
+}
+.adh h2{font-size:23px;font-weight:900;color:#fff;margin:0 0 3px;letter-spacing:-.4px;}
+.adh p{font-size:13px;color:rgba(255,255,255,.5);margin:0;}
+.ad-tabs{display:flex;background:#fff;border-bottom:1px solid var(--border);}
+.adtab{
+  flex:1;padding:14px 8px;border:none;background:transparent;
+  font-size:12px;font-weight:700;color:var(--t3);
+  border-bottom:2.5px solid transparent;transition:.18s;
+}
+.adtab.on{color:var(--navy);border-bottom-color:var(--amber);}
+.ad-body{padding:16px;}
+.ad-panel{display:none;}
+.ad-panel.on{display:block;}
+.card-form{
+  background:#fff;border-radius:var(--r2);padding:18px;margin-bottom:14px;
+  box-shadow:var(--s1);
+}
+.card-form h4{font-size:15px;font-weight:800;color:var(--t1);margin:0 0 14px;letter-spacing:-.2px;}
+.of-card{
+  background:#fff;border-radius:var(--r2);padding:14px;margin-bottom:9px;
+  box-shadow:var(--s1);display:flex;align-items:center;gap:13px;
+}
+.of-av{
+  width:48px;height:48px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,var(--navy),var(--navy2));
+  display:flex;align-items:center;justify-content:center;
+}
+.of-av i{font-size:22px;color:var(--amber);}
+.of-info{flex:1;}
+.of-name{font-size:15px;font-weight:700;color:var(--t1);}
+.of-email{font-size:12px;color:var(--t3);}
+.rep-card{background:#fff;border-radius:var(--r2);padding:17px;margin-bottom:9px;box-shadow:var(--s1);}
+.rep-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.rep-head h4{font-size:15px;font-weight:800;color:var(--t1);margin:0;letter-spacing:-.2px;}
+.rep-badge{background:rgba(245,158,11,.12);border-radius:50px;padding:4px 12px;font-size:13px;font-weight:800;color:var(--amberD);}
+.rep-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px;}
+.rstat{text-align:center;background:var(--bg);border-radius:9px;padding:10px 6px;}
+.rstat b{display:block;font-size:20px;font-weight:900;color:var(--navy);}
+.rstat span{font-size:10px;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+
+/* ── CHAT ────────────────────────────────────────────────── */
+#chat-view{
+  display:none;position:fixed;inset:0;z-index:500;
+  flex-direction:column;background:var(--bg);
+}
+#chat-view.on{display:flex;}
+.chat-h{
+  background:var(--navy);padding:52px 20px 16px;
+  display:flex;align-items:center;gap:12px;flex-shrink:0;
+}
+.chat-h-info{flex:1;}
+.chat-h-info b{display:block;font-size:16px;font-weight:800;color:#fff;letter-spacing:-.2px;}
+.chat-h-info span{font-size:12px;color:rgba(255,255,255,.5);}
+.chat-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:9px;}
+.msg{max-width:80%;padding:10px 14px;border-radius:18px;font-size:14px;line-height:1.45;}
+.msg-out{align-self:flex-end;background:var(--navy);color:#fff;border-bottom-right-radius:4px;}
+.msg-in{align-self:flex-start;background:#fff;color:var(--t1);border-bottom-left-radius:4px;box-shadow:var(--s1);}
+.msg-t{font-size:10px;margin-top:4px;opacity:.5;}
+.chat-bar{
+  background:#fff;padding:12px 14px 34px;
+  display:flex;gap:9px;align-items:center;border-top:1px solid var(--border);flex-shrink:0;
+}
+.chat-inp{
+  flex:1;padding:12px 16px;border:1.5px solid var(--border);
+  border-radius:50px;font-size:14px;outline:none;color:var(--t1);
+}
+.chat-inp:focus{border-color:var(--amber);}
+.btn-send{
+  width:44px;height:44px;border-radius:50%;background:var(--navy);
+  border:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.btn-send i{font-size:20px;color:#fff;}
+
+/* ── MISC ────────────────────────────────────────────────── */
+.empty{text-align:center;padding:44px 20px;}
+.empty i{font-size:46px;color:var(--border);display:block;margin-bottom:11px;}
+.empty h4{font-size:15px;color:var(--t2);margin:0 0 5px;}
+.empty p{font-size:13px;color:var(--t3);margin:0;}
+
+#toast{position:fixed;top:52px;left:50%;transform:translateX(-50%) translateY(-100px);z-index:9999;transition:.3s;}
+#toast.on{transform:translateX(-50%) translateY(0);}
+.toast-in{
+  background:var(--navy);color:#fff;border-radius:50px;
+  padding:10px 20px;font-size:13px;font-weight:700;white-space:nowrap;
+  box-shadow:var(--s3);display:flex;align-items:center;gap:8px;
+}
+
+.spinner{
+  width:20px;height:20px;border-radius:50%;
+  border:2px solid rgba(255,255,255,.3);border-top-color:#fff;
+  animation:spin .75s linear infinite;display:inline-block;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+.back-btn{
+  width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.95);
+  backdrop-filter:blur(12px);box-shadow:var(--s2);border:none;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.back-btn i{font-size:22px;color:var(--navy);}
+.pill-label{
+  background:rgba(255,255,255,.95);backdrop-filter:blur(12px);
+  border-radius:50px;padding:10px 16px;box-shadow:var(--s2);
+  display:flex;align-items:center;gap:8px;
+}
+.pill-label i{font-size:18px;color:var(--sos);}
+.pill-label span{font-size:14px;font-weight:800;color:var(--navy);}
+
+.nexora{text-align:center;font-size:9px;font-weight:800;color:var(--t3);letter-spacing:2px;text-transform:uppercase;padding:20px;}
+
+.leaflet-container{font-family:'Sora',sans-serif !important;}
+select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='%2394A3B8' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;}
+</style>
+</head>
+<body>
+
+<!-- ╔══════════════════════════════ SPLASH ══════════════════╗ -->
+<div class="v on" id="vs" style="background:var(--navy);align-items:center;justify-content:center;">
+  <div class="sp-ring"><div class="sp-ring-inner"><i class='bx bxs-car-crash'></i></div></div>
+  <div class="sp-title">S.O.S ITZ</div>
+  <div class="sp-sub">Socorro Automotivo</div>
+  <div class="sp-dots">
+    <div class="sp-dot"></div><div class="sp-dot"></div><div class="sp-dot"></div>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════ AUTH ════════════════════╗ -->
+<div class="v" id="va">
+  <div class="auth-wrap">
+    <div class="auth-brand">
+      <div class="auth-icon"><i class='bx bxs-car-crash'></i></div>
+      <h1>S.O.S ITZ</h1>
+      <p>Socorro Automotivo</p>
+    </div>
+    <div class="tab-row">
+      <button class="atab on" onclick="setAuthMode('login')">Entrar</button>
+      <button class="atab" onclick="setAuthMode('reg')">Criar Conta</button>
+    </div>
+    <div id="auth-name-w" style="display:none;">
+      <div class="ainp-w"><i class='bx bx-user'></i>
+        <input type="text" class="ainp" id="a-name" placeholder="Seu nome completo">
+      </div>
+    </div>
+    <div class="ainp-w"><i class='bx bx-envelope'></i>
+      <input type="email" class="ainp" id="a-email" placeholder="seu@email.com" autocomplete="email">
+    </div>
+    <div class="ainp-w"><i class='bx bx-lock-alt'></i>
+      <input type="password" class="ainp" id="a-pass" placeholder="Senha" autocomplete="current-password">
+    </div>
+    <button class="btn-main" id="a-btn" onclick="handleAuth()">ENTRAR</button>
+    <div class="divider"><span>ou</span></div>
+    <button class="btn-google" onclick="loginGoogle()">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18"> Continuar com Google
+    </button>
+    <div class="nexora" style="margin-top:auto;padding-top:36px;">Desenvolvido por Nexora AI</div>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════ USER HOME ════════════════╗ -->
+<div class="v" id="vu">
+  <div id="user-map"></div>
+  <div class="mh">
+    <div class="logo-pill">
+      <div class="ld"><i class='bx bxs-car-crash'></i></div>
+      <span>S.O.S ITZ</span>
+    </div>
+    <button class="map-btn" onclick="toggleUMenu()"><i class='bx bx-user-circle'></i></button>
+  </div>
+  <!-- User menu -->
+  <div id="umenu-wrap" onclick="closeUMenu()">
+    <div class="umenu" onclick="event.stopPropagation()">
+      <div class="umenu-row"><b id="menu-name">Usuário</b><span id="menu-email"></span></div>
+      <button class="umenu-item" onclick="closeUMenu();toast('Em breve: histórico','bx-time')"><i class='bx bx-list-ul'></i> Meus Chamados</button>
+      <button class="umenu-item red" onclick="sair()"><i class='bx bx-log-out'></i> Sair</button>
+    </div>
+  </div>
+  <div class="dock" id="user-dock">
+    <div class="dock-bar"></div>
+    <div id="active-preview" style="display:none;"></div>
+    <div class="dock-g" id="dock-greet">Olá, motorista 👋</div>
+    <div class="dock-t">Precisa de socorro?</div>
+    <button class="sos-btn" onclick="openSheet()">
+      <i class='bx bxs-car-crash'></i> PEDIR SOCORRO AGORA
+    </button>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════ TRACKING ════════════════╗ -->
+<div class="v" id="vt">
+  <div id="tracking-map"></div>
+  <div class="t-dock">
+    <div class="dock-bar"></div>
+    <div class="t-status"><div class="ldot"></div><span id="t-status">Aguardando oficina...</span></div>
+    <div class="t-row">
+      <div><h3 id="t-title">Mecânico</h3><p id="t-eta">Procurando disponível...</p></div>
+      <div class="t-avatar"><i class='bx bxs-wrench'></i></div>
+    </div>
+    <div class="t-acts">
+      <button class="btn-t-cancel" onclick="cancelarChamado()">Cancelar</button>
+      <button class="btn-t-chat" id="btn-t-chat" onclick="abrirChat(activeChamadoId,'cliente')" style="display:none;">
+        <i class='bx bx-message-square-dots'></i> Chat com Oficina
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════ WORKSHOP ════════════════╗ -->
+<div class="v" id="vw">
+  <div class="wh">
+    <div class="wh-top">
+      <div class="wh-top-l">
+        <div class="g">Bem-vindo de volta,</div>
+        <div class="n" id="wh-name">Oficina</div>
+      </div>
+      <div class="wh-top-r">
+        <div class="online-badge"><div class="odot"></div>Online</div>
+        <button class="ico-btn" onclick="sair()"><i class='bx bx-log-out'></i></button>
+      </div>
+    </div>
+    <div class="wh-stats">
+      <div class="ws"><b id="wh-pend">0</b><span>Pendentes</span></div>
+      <div class="ws"><b id="wh-hoje">0</b><span>Hoje</span></div>
+      <div class="ws"><b id="wh-total">0</b><span>Total</span></div>
+    </div>
+  </div>
+  <div class="wh-tabs">
+    <button class="whtab on" onclick="wTab('ativos')">📡 Chamados</button>
+    <button class="whtab" onclick="wTab('concluidos')">✅ Concluídos</button>
+  </div>
+  <div class="wb" id="wb">
+    <div class="sec-lbl">Chamados em tempo real</div>
+    <div id="wh-list">
+      <div class="empty"><i class='bx bx-broadcast'></i><h4>Nenhum chamado</h4><p>Novos chamados aparecem aqui</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════ ROUTE ═══════════════════╗ -->
+<div class="v" id="vr">
+  <div id="route-map"></div>
+  <div class="rh">
+    <button class="back-btn" onclick="goBack()"><i class='bx bx-arrow-back'></i></button>
+    <div class="pill-label"><i class='bx bx-navigation'></i><span>Rota para o cliente</span></div>
+  </div>
+  <div class="r-dock">
+    <div class="dock-bar"></div>
+    <div class="r-dest">
+      <div class="r-dest-ico"><i class='bx bxs-map-pin'></i></div>
+      <div>
+        <div class="r-dest-lbl">Destino — Cliente</div>
+        <div class="r-dest-addr" id="r-addr">Carregando...</div>
+      </div>
+    </div>
+    <div class="r-acts">
+      <button class="btn-gmaps" onclick="openGMaps()"><i class='bx bx-map-alt'></i> Google Maps</button>
+      <button class="btn-ico" onclick="abrirChatRoute()"><i class='bx bx-message-square-dots'></i></button>
+    </div>
+    <button class="btn-arrived" onclick="concluir()">
+      <i class='bx bx-check-circle'></i> Atendimento Concluído
+    </button>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════ ADMIN ═══════════════════╗ -->
+<div class="v" id="vad">
+  <div class="adh">
+    <div><h2>Painel Admin</h2><p>S.O.S ITZ — Gestão</p></div>
+    <button class="ico-btn" onclick="sair()"><i class='bx bx-log-out'></i></button>
+  </div>
+  <div class="ad-tabs">
+    <button class="adtab on" onclick="adTab('oficinas')">🏪 Oficinas</button>
+    <button class="adtab" onclick="adTab('usuarios')">👥 Usuários</button>
+    <button class="adtab" onclick="adTab('relatorios')">📊 Relatórios</button>
+  </div>
+  <div class="ad-body">
+    <!-- Oficinas -->
+    <div class="ad-panel on" id="tab-oficinas">
+      <div class="card-form">
+        <h4>Cadastrar Oficina</h4>
+        <div class="frow">
+          <div><div class="fl">Nome da Oficina</div><input class="fi" id="of-nome" placeholder="Auto Center..."></div>
+          <div><div class="fl">Responsável</div><input class="fi" id="of-resp" placeholder="Nome do dono"></div>
+        </div>
+        <div class="fl">E-mail de acesso</div>
+        <input class="fi" id="of-email" placeholder="oficina@email.com" type="email">
+        <div class="fl">Senha inicial</div>
+        <input class="fi" id="of-senha" placeholder="Mínimo 6 caracteres" type="password">
+        <div class="fl">Telefone</div>
+        <input class="fi" id="of-tel" placeholder="(xx) 9xxxx-xxxx" type="tel">
+        <button class="btn-main" onclick="cadastrarOficina()" id="btn-cad-of">CADASTRAR OFICINA</button>
+      </div>
+      <div class="sec-lbl">Oficinas cadastradas</div>
+      <div id="ad-of-list"></div>
+    </div>
+    <!-- Usuários -->
+    <div class="ad-panel" id="tab-usuarios">
+      <div class="sec-lbl">Todos os usuários</div>
+      <div id="ad-usr-list"></div>
+    </div>
+    <!-- Relatórios -->
+    <div class="ad-panel" id="tab-relatorios">
+      <div class="sec-lbl">Relatório por Oficina</div>
+      <div id="ad-rep-list"></div>
+    </div>
+  </div>
+  <div class="nexora">Desenvolvido por Nexora AI</div>
+</div>
+
+<!-- ╔══════════════════════════════ SERVICE SHEET ═══════════╗ -->
+<div class="overlay" id="overlay" onclick="closeSheet()"></div>
+<div class="sheet" id="sht">
+  <div class="sh-bar"></div>
+  <div class="sh-title">Pedir Socorro</div>
+  <div class="sh-sub">Selecione o problema e preencha os dados</div>
+
+  <div class="fl">Tipo de problema</div>
+  <div class="chips">
+    <div class="chip sel" onclick="selChip(this,'Mecânico')"><i class='bx bxs-wrench'></i><span>Mecânico</span></div>
+    <div class="chip" onclick="selChip(this,'Guincho')"><i class='bx bxs-truck'></i><span>Guincho</span></div>
+    <div class="chip" onclick="selChip(this,'Bateria')"><i class='bx bxs-bolt'></i><span>Bateria</span></div>
+    <div class="chip" onclick="selChip(this,'Pneu')"><i class='bx bxs-car-crash'></i><span>Pneu</span></div>
+    <div class="chip" onclick="selChip(this,'Combustível')"><i class='bx bxs-gas-pump'></i><span>Gasolina</span></div>
+    <div class="chip" onclick="selChip(this,'Outro')"><i class='bx bxs-help-circle'></i><span>Outro</span></div>
+  </div>
+
+  <div class="frow">
+    <div><div class="fl">Marca / Modelo</div><input class="fi" id="req-veh" placeholder="Ex: Gol G5"></div>
+    <div><div class="fl">Cor</div><input class="fi" id="req-cor" placeholder="Ex: Prata"></div>
+  </div>
+
+  <div class="fl">Sua localização</div>
+  <div class="loc-pill" id="loc-pill">
+    <i class='bx bx-loader-circle bx-spin'></i>
+    <div><b>Detectando GPS...</b><span id="loc-txt">Aguarde</span></div>
+  </div>
+  <div id="req-map"></div>
+
+  <div class="fl">Ponto de referência / detalhes</div>
+  <textarea class="fi" id="req-desc" rows="3" placeholder="Ex: Em frente ao posto Shell, pneu traseiro furado..." style="resize:none;"></textarea>
+
+  <button class="btn-sos2" onclick="enviarPedido()" id="btn-env">
+    <i class='bx bx-broadcast'></i> PUBLICAR CHAMADO
+  </button>
+  <button class="btn-cancel2" onclick="closeSheet()">Cancelar</button>
+</div>
+
+<!-- ╔══════════════════════════════ CHAT ════════════════════╗ -->
+<div id="chat-view">
+  <div class="chat-h">
+    <button class="back-btn" onclick="fecharChat()"><i class='bx bx-arrow-back'></i></button>
+    <div class="chat-h-info">
+      <b id="chat-title">Chat</b>
+      <span id="chat-status">Online</span>
+    </div>
+    <div class="t-avatar" style="width:40px;height:40px;"><i class='bx bxs-wrench' style="font-size:18px;"></i></div>
+  </div>
+  <div class="chat-body" id="chat-msgs"></div>
+  <div class="chat-bar">
+    <input class="chat-inp" id="chat-inp" placeholder="Mensagem..." onkeydown="if(event.key==='Enter')enviarMsg()">
+    <button class="btn-send" onclick="enviarMsg()"><i class='bx bx-send'></i></button>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════ TOAST ═══════════════════╗ -->
+<div id="toast"><div class="toast-in"><i id="toast-ico" class='bx bx-check'></i><span id="toast-msg">OK</span></div></div>
+
+<!-- ══════════════════════════════ SCRIPTS ═══════════════════ -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script type="module">
+import { initializeApp }                                 from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword,
+         createUserWithEmailAndPassword, signInWithPopup,
+         GoogleAuthProvider, signOut }                   from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, collection, doc, addDoc, getDoc,
+         getDocs, setDoc, updateDoc, deleteDoc, onSnapshot,
+         query, where, orderBy, serverTimestamp, limit }  from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+/* ── CONFIG ──────────────────────────────────────────────── */
+const firebaseConfig = {
+  apiKey:            "AIzaSyBcThtAGaLFpObMWZKpnlS3NZwb1YOWC00",
+  authDomain:        "sosweb-85603.firebaseapp.com",
+  projectId:         "sosweb-85603",
+  storageBucket:     "sosweb-85603.firebasestorage.app",
+  messagingSenderId: "493039677510",
+  appId:             "1:493039677510:web:851cb36b68b6203650da47"
+};
+
+// App principal
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+const gp   = new GoogleAuthProvider();
+
+// App secundário — para admin criar contas de oficina sem perder sessão
+const app2  = initializeApp(firebaseConfig, 'secondary');
+const auth2 = getAuth(app2);
+
+/* ── STATE ───────────────────────────────────────────────── */
+let me = null, myRole = null;
+let selService = 'Mecânico';
+let reqMap = null, reqMarker = null;
+let userMapObj = null, userMarkerObj = null;
+let trackingMapObj = null;
+let routeMapObj = null;
+let activeChamadoId = null;
+let activeRouteId   = null;
+let chatChamadoId   = null, chatRole = null, chatUnsub = null;
+let whUnsub = null;
+let mmaps = {};
+let wTabCur = 'ativos';
+
+/* ── VIEW ────────────────────────────────────────────────── */
+function show(id) {
+  document.querySelectorAll('.v').forEach(v => v.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  if (id === 'vu' && !userMapObj) setTimeout(initUserMap, 200);
+}
+window.goBack = () => show(myRole === 'oficina' ? 'vw' : 'vu');
+
+/* ── TOAST ───────────────────────────────────────────────── */
+function toast(msg, ico='bx-check') {
+  document.getElementById('toast-msg').textContent = msg;
+  document.getElementById('toast-ico').className = `bx ${ico}`;
+  const t = document.getElementById('toast');
+  t.classList.add('on');
+  setTimeout(() => t.classList.remove('on'), 3200);
+}
+window.toast = toast;
+
+/* ── SPLASH → AUTH ───────────────────────────────────────── */
+setTimeout(() => {
+  const sp = document.getElementById('vs');
+  sp.style.transition = 'opacity .45s';
+  sp.style.opacity = '0';
+  setTimeout(() => { sp.style.display = 'none'; }, 450);
+}, 2400);
+
+/* ── AUTH ────────────────────────────────────────────────── */
+let authMode = 'login';
+window.setAuthMode = (m) => {
+  authMode = m;
+  document.querySelectorAll('.atab').forEach((t,i) =>
+    t.classList.toggle('on', (i===0&&m==='login')||(i===1&&m==='reg')));
+  document.getElementById('auth-name-w').style.display = m==='reg' ? 'block' : 'none';
+  document.getElementById('a-btn').textContent = m==='login' ? 'ENTRAR' : 'CRIAR CONTA';
+};
+
+window.handleAuth = async () => {
+  const email = document.getElementById('a-email').value.trim();
+  const pass  = document.getElementById('a-pass').value;
+  const name  = document.getElementById('a-name').value.trim();
+  if (!email || !pass) return toast('Preencha e-mail e senha', 'bx-error');
+  const btn = document.getElementById('a-btn');
+  btn.innerHTML = '<span class="spinner"></span>';
+  btn.disabled = true;
+  try {
+    if (authMode === 'reg') {
+      const c = await createUserWithEmailAndPassword(auth, email, pass);
+      await setDoc(doc(db,'usuarios',c.user.uid),{
+        email, nome: name || email.split('@')[0], role:'cliente', criadoEm: serverTimestamp()
+      });
+    } else {
+      await signInWithEmailAndPassword(auth, email, pass);
+    }
+  } catch (e) {
+    toast(tradErr(e.code), 'bx-error');
+    btn.innerHTML = authMode==='login' ? 'ENTRAR' : 'CRIAR CONTA';
+    btn.disabled = false;
+  }
+};
+
+window.loginGoogle = () => signInWithPopup(auth, gp).catch(e => toast(e.message,'bx-error'));
+window.sair = () => signOut(auth);
+
+function tradErr(c) {
+  return ({
+    'auth/user-not-found':'Usuário não encontrado',
+    'auth/wrong-password':'Senha incorreta',
+    'auth/email-already-in-use':'E-mail já cadastrado',
+    'auth/weak-password':'Senha deve ter 6+ caracteres'
+  })[c] || c;
+}
+
+/* ── AUTH STATE ──────────────────────────────────────────── */
+onAuthStateChanged(auth, async (user) => {
+  if (!user) { me = null; myRole = null; show('va'); return; }
+  me = user;
+
+  let snap = await getDoc(doc(db,'usuarios',user.uid));
+  if (!snap.exists()) {
+    await setDoc(doc(db,'usuarios',user.uid),{
+      email: user.email,
+      nome: user.displayName || user.email.split('@')[0],
+      role: 'cliente', criadoEm: serverTimestamp()
+    });
+    snap = await getDoc(doc(db,'usuarios',user.uid));
+  }
+  const d = snap.data();
+  // Manter compatibilidade com emails de admin hard-coded
+  if (user.email === 'admin1@gmail.com') myRole = 'admin';
+  else myRole = d.role || 'cliente';
+
+  if (myRole === 'admin') {
+    show('vad'); loadAdmin();
+  } else if (myRole === 'oficina') {
+    document.getElementById('wh-name').textContent = d.nome || 'Oficina';
+    show('vw'); startWhListener();
+  } else {
+    const fn = (d.nome || user.email.split('@')[0]).split(' ')[0];
+    document.getElementById('dock-greet').textContent = `Olá, ${fn} 👋`;
+    document.getElementById('menu-name').textContent  = d.nome || fn;
+    document.getElementById('menu-email').textContent = user.email;
+    show('vu'); checkActiveCall();
+  }
+});
+
+/* ── USER MAP ────────────────────────────────────────────── */
+function initUserMap() {
+  userMapObj = L.map('user-map',{zoomControl:false,attributionControl:false}).setView([-23.55,-46.63],14);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(userMapObj);
+  navigator.geolocation.getCurrentPosition(p => {
+    userMapObj.setView([p.coords.latitude,p.coords.longitude],16);
+    const ico = L.divIcon({
+      html:`<div style="width:18px;height:18px;background:#3B82F6;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.35);"></div>`,
+      iconSize:[18,18],iconAnchor:[9,9],className:''
+    });
+    userMarkerObj = L.marker([p.coords.latitude,p.coords.longitude],{icon:ico}).addTo(userMapObj);
+  },null,{enableHighAccuracy:true});
+}
+
+/* ── USER MENU ───────────────────────────────────────────── */
+window.toggleUMenu = () => document.getElementById('umenu-wrap').classList.toggle('on');
+window.closeUMenu  = () => document.getElementById('umenu-wrap').classList.remove('on');
+
+/* ── SHEET ───────────────────────────────────────────────── */
+window.openSheet = () => {
+  document.getElementById('overlay').classList.add('on');
+  const sht = document.getElementById('sht');
+  sht.classList.add('on');
+  if (!reqMap) {
+    setTimeout(() => {
+      reqMap = L.map('req-map',{zoomControl:false,attributionControl:false,dragging:false,touchZoom:false,scrollWheelZoom:false}).setView([-23.55,-46.63],15);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(reqMap);
+    },120);
+  }
+  navigator.geolocation.getCurrentPosition(async p => {
+    const {latitude:lat,longitude:lng} = p.coords;
+    if (reqMap) {
+      reqMap.setView([lat,lng],16);
+      if (reqMarker) reqMarker.setLatLng([lat,lng]);
+      else {
+        const ico = L.divIcon({html:`<div style="width:22px;height:22px;background:var(--sos);border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.3);"></div>`,iconSize:[22,22],iconAnchor:[11,11],className:''});
+        reqMarker = L.marker([lat,lng],{icon:ico,draggable:true}).addTo(reqMap);
+      }
+    }
+    try {
+      const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+      const j = await r.json();
+      const addr = j.display_name.split(',').slice(0,3).join(', ');
+      document.getElementById('loc-pill').innerHTML =
+        `<i class='bx bx-map-pin' style="color:var(--green);font-size:20px;margin-top:2px;flex-shrink:0;"></i><div><b>Localização detectada ✓</b><span id="loc-txt">${addr}</span></div>`;
+    } catch(e) {}
+  },null,{enableHighAccuracy:true});
+};
+
+window.closeSheet = () => {
+  document.getElementById('overlay').classList.remove('on');
+  document.getElementById('sht').classList.remove('on');
+};
+
+window.selChip = (el, svc) => {
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('sel'));
+  el.classList.add('sel');
+  selService = svc;
+};
+
+/* ── ENVIAR PEDIDO ───────────────────────────────────────── */
+window.enviarPedido = async () => {
+  const veh = document.getElementById('req-veh').value.trim();
+  if (!veh) return toast('Informe o modelo do veículo','bx-error');
+  const btn = document.getElementById('btn-env');
+  btn.innerHTML = '<span class="spinner"></span>';
+  btn.disabled = true;
+
+  const locTxt = document.getElementById('loc-txt')?.textContent || 'Local não detectado';
+  let lat = -23.55, lng = -46.63;
+  if (reqMarker) { lat = reqMarker.getLatLng().lat; lng = reqMarker.getLatLng().lng; }
+
+  try {
+    const ref = await addDoc(collection(db,'chamados'),{
+      uid:         me.uid,
+      nomeCliente: me.displayName || me.email.split('@')[0],
+      servico:     selService,
+      veiculo:     veh,
+      cor:         document.getElementById('req-cor').value.trim(),
+      endereco:    locTxt,
+      descricao:   document.getElementById('req-desc').value.trim(),
+      lat, lng,
+      status:      'pendente',
+      criadoEm:    serverTimestamp(),
+      oficina_id:  null
+    });
+    activeChamadoId = ref.id;
+    closeSheet();
+    document.getElementById('req-veh').value = '';
+    document.getElementById('req-cor').value = '';
+    document.getElementById('req-desc').value = '';
+    btn.innerHTML = '<i class="bx bx-broadcast"></i> PUBLICAR CHAMADO';
+    btn.disabled = false;
+    toast('Chamado publicado! Aguardando oficina...','bx-broadcast');
+    showTracking(ref.id);
+  } catch(e) {
+    toast('Erro: '+e.message,'bx-error');
+    btn.innerHTML = '<i class="bx bx-broadcast"></i> PUBLICAR CHAMADO';
+    btn.disabled = false;
+  }
+};
+
+/* ── TRACKING ────────────────────────────────────────────── */
+function showTracking(cid) {
+  show('vt');
+  if (!trackingMapObj) {
+    trackingMapObj = L.map('tracking-map',{zoomControl:false,attributionControl:false}).setView([-23.55,-46.63],15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(trackingMapObj);
+    L.control.zoom({position:'bottomright'}).addTo(trackingMapObj);
+  }
+  onSnapshot(doc(db,'chamados',cid), snap => {
+    const d = snap.data(); if (!d) return;
+    trackingMapObj.setView([d.lat,d.lng],16);
+    document.getElementById('t-title').textContent = d.servico;
+    if (d.status==='pendente') {
+      document.getElementById('t-status').textContent = 'Aguardando oficina aceitar...';
+      document.getElementById('t-eta').textContent    = 'Procurando disponível...';
+      document.getElementById('btn-t-chat').style.display = 'none';
+    } else if (d.status==='aceito'||d.status==='a_caminho') {
+      document.getElementById('t-status').textContent = '🔧 Mecânico a caminho!';
+      document.getElementById('t-eta').textContent    = 'O mecânico está se deslocando até você';
+      document.getElementById('btn-t-chat').style.display = 'flex';
+    } else if (d.status==='concluido') {
+      activeChamadoId = null;
+      toast('Atendimento concluído! ✓','bx-check-circle');
+      show('vu'); checkActiveCall();
+    } else if (d.status==='cancelado') {
+      activeChamadoId = null;
+      show('vu'); checkActiveCall();
+    }
+  });
+}
+
+function checkActiveCall() {
+  if (!me) return;
+  const prev = document.getElementById('active-preview');
+  const q = query(collection(db,'chamados'),
+    where('uid','==',me.uid),
+    where('status','in',['pendente','aceito','a_caminho']),
+    limit(1));
+  onSnapshot(q, snap => {
+    if (snap.empty) { prev.style.display='none'; activeChamadoId=null; return; }
+    const d = snap.docs[0]; activeChamadoId = d.id;
+    const dt = d.data();
+    const lbl = dt.status==='pendente' ? 'Aguardando oficina...' : '🔧 Mecânico a caminho!';
+    prev.style.display='block';
+    prev.innerHTML = `
+      <div class="active-banner" onclick="showTracking('${d.id}')">
+        <div class="pdot"></div>
+        <div class="btext"><b>${dt.servico} — ${dt.veiculo}</b><s>${lbl}</s></div>
+        <i class='bx bx-chevron-right'></i>
+      </div>`;
+  });
+}
+
+window.cancelarChamado = async () => {
+  if (!activeChamadoId || !confirm('Cancelar o chamado?')) return;
+  await updateDoc(doc(db,'chamados',activeChamadoId),{status:'cancelado'});
+  activeChamadoId = null;
+  show('vu');
+};
+window.showTracking = showTracking;
+
+/* ── WORKSHOP LISTENER ───────────────────────────────────── */
+function startWhListener() {
+  if (whUnsub) whUnsub();
+  renderWhCalls(wTabCur);
+  loadWhStats();
+}
+
+function renderWhCalls(tab) {
+  if (whUnsub) { whUnsub(); whUnsub = null; }
+  const statusArr = tab === 'ativos'
+    ? ['pendente','aceito','a_caminho']
+    : ['concluido'];
+
+  const q = query(collection(db,'chamados'), where('status','in', statusArr));
+  whUnsub = onSnapshot(q, snap => {
+    const list = document.getElementById('wh-list');
+    Object.values(mmaps).forEach(m => { try { m.remove(); } catch(e){} });
+    mmaps = {};
+    list.innerHTML = '';
+
+    const pend = snap.docs.filter(d=>d.data().status==='pendente').length;
+    document.getElementById('wh-pend').textContent = pend;
+
+    if (snap.empty) {
+      list.innerHTML = `<div class="empty"><i class='bx bx-broadcast'></i><h4>Nenhum chamado</h4><p>Novos chamados aparecem aqui em tempo real</p></div>`;
+      return;
+    }
+
+    const docs = [...snap.docs].sort((a,b)=>
+      (b.data().criadoEm?.seconds||0)-(a.data().criadoEm?.seconds||0));
+
+    docs.forEach(dSnap => {
+      const c = dSnap.data(), id = dSnap.id;
+      const isPend   = c.status==='pendente';
+      const isAceito = c.status==='aceito'||c.status==='a_caminho';
+      const isDone   = c.status==='concluido';
+      const tagCls   = isPend?'pend':isAceito?'aceito':'done';
+      const tagLbl   = isPend?'🔴 Pendente':isAceito?'🟡 Em Atendimento':'🟢 Concluído';
+      const when     = c.criadoEm?.toDate ? c.criadoEm.toDate().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '';
+
+      const div = document.createElement('div');
+      div.className = `cc ${tagCls}`;
+      div.innerHTML = `
+        <div class="cc-tag ${tagCls}">${tagLbl}</div>
+        <div class="cc-svc">${c.servico}</div>
+        <div class="cc-veh">${c.veiculo}${c.cor?' — '+c.cor:''}</div>
+        <div class="cc-loc"><i class='bx bx-map-pin'></i>${c.endereco}</div>
+        ${c.descricao?`<div class="cc-desc">"${c.descricao}"</div>`:''}
+        ${when?`<div style="font-size:11px;color:var(--t3);margin-bottom:8px;">⏱ ${when}</div>`:''}
+        <div class="cc-mmap" id="mm-${id}"></div>
+        <div class="cc-acts">
+          ${isPend
+            ? `<button class="btn-accept" onclick="aceitarChamado('${id}',${c.lat},${c.lng},'${c.endereco.replace(/'/g,"\\'")}')"><i class='bx bx-check'></i> Aceitar Chamado</button>`
+            : `<button class="btn-route2" style="flex:2;" onclick="irRota('${id}',${c.lat},${c.lng},'${c.endereco.replace(/'/g,"\\'")}')"><i class='bx bx-navigation'></i> Ver Rota</button>`
+          }
+          ${!isDone?`<button class="btn-ico" onclick="abrirChat('${id}','oficina')" title="Chat"><i class='bx bx-message-square-dots'></i></button>`:''}
+        </div>`;
+      list.appendChild(div);
+
+      setTimeout(() => {
+        if (mmaps[id]) return;
+        try {
+          const mm = L.map(`mm-${id}`,{zoomControl:false,attributionControl:false,dragging:false,touchZoom:false,scrollWheelZoom:false}).setView([c.lat,c.lng],15);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mm);
+          const ico = L.divIcon({html:`<div style="width:20px;height:20px;background:var(--sos);border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.3);"></div>`,iconSize:[20,20],iconAnchor:[10,10],className:''});
+          L.marker([c.lat,c.lng],{icon:ico}).addTo(mm);
+          mmaps[id] = mm;
+        } catch(e) {}
+      }, 500);
+    });
+
+    loadWhStats();
+  });
+}
+
+async function loadWhStats() {
+  try {
+    const hoje = new Date(); hoje.setHours(0,0,0,0);
+    const [all, hj] = await Promise.all([
+      getDocs(query(collection(db,'chamados'),where('status','==','concluido'))),
+      getDocs(query(collection(db,'chamados'),where('status','==','concluido'),where('criadoEm','>=',hoje)))
+    ]);
+    document.getElementById('wh-total').textContent = all.size;
+    document.getElementById('wh-hoje').textContent  = hj.size;
+  } catch(e) {}
+}
+
+window.wTab = (t) => {
+  wTabCur = t;
+  document.querySelectorAll('.whtab').forEach((el,i)=>el.classList.toggle('on',(i===0&&t==='ativos')||(i===1&&t==='concluidos')));
+  const lbl = document.querySelector('#wb .sec-lbl');
+  if (lbl) lbl.textContent = t==='ativos' ? 'Chamados em tempo real' : 'Atendimentos concluídos';
+  renderWhCalls(t);
+};
+
+window.aceitarChamado = async (id, lat, lng, addr) => {
+  await updateDoc(doc(db,'chamados',id),{status:'aceito',oficina_id:me.uid,aceito_em:serverTimestamp()});
+  toast('Chamado aceito! Vá para o cliente.','bx-check-circle');
+  irRota(id, lat, lng, addr);
+};
+
+window.irRota = (id, lat, lng, addr) => {
+  activeRouteId = id;
+  document.getElementById('r-addr').textContent = addr || 'Endereço do cliente';
+  show('vr');
+  setTimeout(() => {
+    if (routeMapObj) { routeMapObj.remove(); routeMapObj = null; }
+    routeMapObj = L.map('route-map',{zoomControl:false,attributionControl:false}).setView([lat,lng],15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(routeMapObj);
+    L.control.zoom({position:'bottomright'}).addTo(routeMapObj);
+    // Marcador do cliente
+    const cIco = L.divIcon({html:`<div style="width:28px;height:28px;background:var(--sos);border:3.5px solid #fff;border-radius:50%;box-shadow:0 3px 10px rgba(239,68,68,.55);display:flex;align-items:center;justify-content:center;"><i class='bx bxs-map-pin' style='color:#fff;font-size:13px;'></i></div>`,iconSize:[28,28],iconAnchor:[14,14],className:''});
+    L.marker([lat,lng],{icon:cIco}).addTo(routeMapObj).bindPopup('<b>📍 Cliente aqui</b>').openPopup();
+    // Posição do mecânico
+    navigator.geolocation.getCurrentPosition(p => {
+      const mIco = L.divIcon({html:`<div style="width:24px;height:24px;background:var(--amber);border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(245,158,11,.5);"></div>`,iconSize:[24,24],iconAnchor:[12,12],className:''});
+      L.marker([p.coords.latitude,p.coords.longitude],{icon:mIco}).addTo(routeMapObj).bindPopup('🔧 Você');
+      const poly = L.polyline([[p.coords.latitude,p.coords.longitude],[lat,lng]],{color:var_navy(),weight:4,dashArray:'9,6',opacity:.75}).addTo(routeMapObj);
+      routeMapObj.fitBounds(poly.getBounds(),{padding:[70,70]});
+    });
+  },320);
+};
+
+function var_navy() { return '#0D1B2A'; }
+
+window.openGMaps = async () => {
+  if (!activeRouteId) return;
+  const s = await getDoc(doc(db,'chamados',activeRouteId));
+  const d = s.data();
+  window.open(`https://maps.google.com/?q=${d.lat},${d.lng}`,'_blank');
+};
+
+window.concluir = async () => {
+  if (!activeRouteId || !confirm('Confirmar conclusão do atendimento?')) return;
+  await updateDoc(doc(db,'chamados',activeRouteId),{status:'concluido',concluido_em:serverTimestamp()});
+  toast('Atendimento concluído! ✓','bx-check-circle');
+  show('vw');
+};
+
+window.abrirChatRoute = () => abrirChat(activeRouteId,'oficina');
+
+/* ── CHAT ────────────────────────────────────────────────── */
+window.abrirChat = (cid, role) => {
+  if (!cid) return;
+  chatChamadoId = cid; chatRole = role;
+  document.getElementById('chat-view').classList.add('on');
+  document.getElementById('chat-title').textContent = role==='oficina' ? 'Chat com Cliente' : 'Chat com Oficina';
+  document.getElementById('chat-msgs').innerHTML = '';
+  if (chatUnsub) chatUnsub();
+  const q = query(collection(db,'chamados',cid,'msgs'),orderBy('ts','asc'));
+  chatUnsub = onSnapshot(q, snap => {
+    const body = document.getElementById('chat-msgs');
+    body.innerHTML = '';
+    snap.forEach(m => {
+      const d = m.data(), mine = d.uid===me.uid;
+      const div = document.createElement('div');
+      div.className = `msg ${mine?'msg-out':'msg-in'}`;
+      const t = d.ts?.toDate ? d.ts.toDate().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '';
+      div.innerHTML = `${d.texto}<div class="msg-t">${t}</div>`;
+      body.appendChild(div);
+    });
+    body.scrollTop = body.scrollHeight;
+  });
+};
+window.fecharChat = () => {
+  document.getElementById('chat-view').classList.remove('on');
+  if (chatUnsub) { chatUnsub(); chatUnsub = null; }
+};
+window.enviarMsg = async () => {
+  const inp  = document.getElementById('chat-inp');
+  const txt  = inp.value.trim();
+  if (!txt || !chatChamadoId) return;
+  inp.value = '';
+  await addDoc(collection(db,'chamados',chatChamadoId,'msgs'),{
+    uid: me.uid, role: chatRole, texto: txt, ts: serverTimestamp()
+  });
+};
+
+/* ── ADMIN ───────────────────────────────────────────────── */
+window.adTab = (t) => {
+  document.querySelectorAll('.adtab').forEach((el,i) =>
+    el.classList.toggle('on',['oficinas','usuarios','relatorios'][i]===t));
+  document.querySelectorAll('.ad-panel').forEach(p => p.classList.remove('on'));
+  document.getElementById(`tab-${t}`).classList.add('on');
+  if (t==='relatorios') loadRelatorios();
+  if (t==='usuarios') loadUsuarios();
+};
+
+async function loadAdmin() { loadOficinas(); }
+
+async function loadOficinas() {
+  const snap = await getDocs(collection(db,'oficinas'));
+  const list = document.getElementById('ad-of-list');
+  list.innerHTML = '';
+  if (snap.empty) {
+    list.innerHTML = `<div class="empty"><i class='bx bxs-wrench'></i><h4>Nenhuma oficina</h4><p>Cadastre a primeira acima</p></div>`;
+    return;
+  }
+  snap.forEach(d => {
+    const o = d.data();
+    list.innerHTML += `
+      <div class="of-card">
+        <div class="of-av"><i class='bx bxs-wrench'></i></div>
+        <div class="of-info">
+          <div class="of-name">${o.nome}</div>
+          <div class="of-email">${o.email}${o.telefone?' • '+o.telefone:''}</div>
+        </div>
+        <button style="background:none;border:none;cursor:pointer;" onclick="remOficina('${d.id}')">
+          <i class='bx bx-trash' style="font-size:20px;color:var(--sos);"></i>
+        </button>
+      </div>`;
+  });
+}
+
+window.cadastrarOficina = async () => {
+  const nome  = document.getElementById('of-nome').value.trim();
+  const resp  = document.getElementById('of-resp').value.trim();
+  const email = document.getElementById('of-email').value.trim();
+  const senha = document.getElementById('of-senha').value;
+  const tel   = document.getElementById('of-tel').value.trim();
+  if (!nome||!email||!senha) return toast('Preencha nome, e-mail e senha','bx-error');
+  const btn = document.getElementById('btn-cad-of');
+  btn.innerHTML='<span class="spinner"></span>'; btn.disabled=true;
+  try {
+    // Cria conta usando app secundário para não deslogar o admin
+    const cred = await createUserWithEmailAndPassword(auth2, email, senha);
+    const uid  = cred.user.uid;
+    const ofRef = await addDoc(collection(db,'oficinas'),{nome,responsavel:resp,email,telefone:tel,uid,criadoEm:serverTimestamp()});
+    await setDoc(doc(db,'usuarios',uid),{email,nome,role:'oficina',oficina_id:ofRef.id,criadoEm:serverTimestamp()});
+    // Deslogar do app secundário
+    await signOut(auth2);
+    toast('Oficina cadastrada com sucesso! ✓','bx-check-circle');
+    ['of-nome','of-resp','of-email','of-senha','of-tel'].forEach(id=>document.getElementById(id).value='');
+    loadOficinas();
+  } catch(e) {
+    toast('Erro: '+tradErr(e.code),'bx-error');
+  }
+  btn.innerHTML='CADASTRAR OFICINA'; btn.disabled=false;
+};
+
+window.remOficina = async (id) => {
+  if (!confirm('Remover esta oficina?')) return;
+  await deleteDoc(doc(db,'oficinas',id));
+  toast('Oficina removida');
+  loadOficinas();
+};
+
+async function loadUsuarios() {
+  const snap = await getDocs(collection(db,'usuarios'));
+  const list = document.getElementById('ad-usr-list');
+  list.innerHTML = '';
+  snap.forEach(d => {
+    const u = d.data();
+    if (u.role==='admin') return;
+    list.innerHTML += `
+      <div class="of-card">
+        <div class="of-av" style="background:linear-gradient(135deg,#3B82F6,#1D4ED8);">
+          <i class='bx bx-user' style="color:#fff;font-size:20px;"></i>
+        </div>
+        <div class="of-info">
+          <div class="of-name">${u.nome||u.email.split('@')[0]}</div>
+          <div class="of-email">${u.email}</div>
+        </div>
+        <select style="padding:7px 10px;border-radius:9px;border:1.5px solid var(--border);font-size:12px;font-weight:700;color:var(--t1);background:#fff;" onchange="mudarRole('${d.id}',this.value)">
+          <option value="cliente" ${u.role==='cliente'?'selected':''}>Cliente</option>
+          <option value="oficina" ${u.role==='oficina'?'selected':''}>Oficina</option>
+          <option value="admin"   ${u.role==='admin'?'selected':''}>Admin</option>
+        </select>
+      </div>`;
+  });
+  if (!snap.size) list.innerHTML=`<div class="empty"><i class='bx bx-group'></i><h4>Nenhum usuário</h4><p></p></div>`;
+}
+window.mudarRole = (id,role) => updateDoc(doc(db,'usuarios',id),{role}).then(()=>toast('Perfil atualizado'));
+
+async function loadRelatorios() {
+  const list = document.getElementById('ad-rep-list');
+  list.innerHTML = `<div class="empty"><i class='bx bx-loader-circle bx-spin'></i></div>`;
+  const [ofSnap, chSnap] = await Promise.all([
+    getDocs(collection(db,'oficinas')),
+    getDocs(collection(db,'chamados'))
+  ]);
+  list.innerHTML = '';
+  if (ofSnap.empty) {
+    list.innerHTML=`<div class="empty"><i class='bx bx-bar-chart'></i><h4>Nenhuma oficina cadastrada</h4><p></p></div>`;
+    return;
+  }
+  ofSnap.forEach(od => {
+    const o = od.data();
+    const ch    = chSnap.docs.filter(c=>c.data().oficina_id===o.uid);
+    const done  = ch.filter(c=>c.data().status==='concluido').length;
+    const ativ  = ch.filter(c=>['aceito','a_caminho'].includes(c.data().status)).length;
+    const pend  = ch.length - done - ativ;
+    list.innerHTML += `
+      <div class="rep-card">
+        <div class="rep-head">
+          <h4>${o.nome}</h4>
+          <div class="rep-badge">${ch.length} chamados</div>
+        </div>
+        <div style="font-size:12px;color:var(--t3);margin-bottom:8px;">${o.responsavel||''} • ${o.email}</div>
+        <div class="rep-stats">
+          <div class="rstat"><b style="color:var(--green);">${done}</b><span>Concluídos</span></div>
+          <div class="rstat"><b style="color:var(--amberD);">${ativ}</b><span>Em andamento</span></div>
+          <div class="rstat"><b style="color:var(--sos);">${pend}</b><span>Pendentes</span></div>
+        </div>
+      </div>`;
+  });
+}
+
+// Expose globals usados em onclick inline
+window.showTracking = showTracking;
+</script>
+
+<!-- ── SERVICE WORKER ──────────────────────────────────────── -->
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () =>
+    navigator.serviceWorker.register('sw.js').catch(()=>{})
+  );
+}
+</script>
+</body>
+</html>
